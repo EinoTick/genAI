@@ -1,0 +1,311 @@
+ The Claude Code Master Prompt
+  Project Objective:
+  Please build a Node.js CLI application using TypeScript. This is an AI Agent acting as a "helpful butler" that interacts with the user via stdio.
+
+  Tech Stack & Libraries:
+
+  Runtime: Node.js (run via tsx for TypeScript execution without compilation)
+
+  AI Framework: ai (Vercel AI SDK) and @ai-sdk/google
+
+  Database: better-sqlite3
+
+  Validation: zod (for defining LLM tool schemas)
+
+  Dotenv: dotenv (to load the .env file)
+
+  Core Requirements:
+
+  Project Setup: Initialize the package.json, install all necessary dependencies (and @types), and set up a basic tsconfig.json. Ensure the Vercel AI SDK is configured to use the
+   google('gemini-2.5-flash') model.
+
+  Database (src/db.ts): Initialize a local todos.db using better-sqlite3. Create a todos table with id (INTEGER PRIMARY KEY), task (TEXT), completed (BOOLEAN default 0), and
+  created_at (TIMESTAMP). Include basic CRUD helper functions.
+
+  Weather API (src/weather.ts): Create a function to fetch the current weather using the free Open-Meteo API (e.g., [https://api.open-meteo.com/v1/forecast?latitude=60.1695&longi
+  tude=24.9354&current_weather=true](https://api.open-meteo.com/v1/forecast?latitude=60.1695&longitude=24.9354&current_weather=true)). Do not use any API keys for this.
+
+  Agent Tools (src/tools.ts): Use the Vercel AI SDK tool pattern with Zod to define the following tools:
+
+  add_todo: Takes a task string, saves to SQLite.
+
+  list_todos: Retrieves pending TODOs from SQLite.
+
+  complete_todo: Takes an id, marks it completed in SQLite.
+
+  get_weather: Fetches current weather using the Open-Meteo function.
+
+  Main Loop (src/index.ts):
+
+  Set up a readline interface for standard input/output.
+
+  Create an infinite chat loop using Vercel AI SDK's generateText or streamText. Note: Since we are in a CLI, generateText with maxSteps: 5 is likely the easiest way to handle
+  multi-step tool calls seamlessly.
+
+  Pass the defined tools into the AI SDK configuration.
+
+  The Morning Briefing: When the app starts, immediately generate and print a "Morning Update" to stdout. The system prompt for this initial message should instruct the agent to:
+   check the weather, suggest what to wear based on that weather, and list today's pending TODOs in the persona of a helpful, polite butler. After this initial briefing, drop
+  into the standard user input loop.
+
+  Please write all necessary files, create a .env.example showing GOOGLE_GENERATIVE_AI_API_KEY=, and let me know when I can run npx tsx src/index.ts.
+
+  Your Execution Checklist
+  Run the prompt in Claude Code.
+
+  Grab your free key from aistudio.google.com.
+
+  Create your .env file and paste the key.
+
+  Run npm install (or pnpm install / yarn).
+
+  Run npx tsx src/index.ts.
+
+  Test adding a task and then asking for the weather.
+
+  Crucial: Once it works, write your README.md explaining how to run it and why you chose this stack (to fulfill the documentation requirement).
+
+● I'll build the full project now. Let me start by checking the working directory and creating all files.
+
+  Searched for 2 patterns, listed 1 directory (ctrl+o to expand)
+
+● I'll create all project files in D:\projects\genAI. Let me write everything in parallel.
+
+● Write(package.json)
+  ⎿  Wrote 23 lines to package.json
+       1 {
+       2   "name": "ai-butler",
+       3   "version": "1.0.0",
+       4   "description": "An AI-powered helpful butler CLI agent",
+       5   "type": "module",
+       6   "scripts": {
+       7     "start": "npx tsx src/index.ts",
+       8     "dev": "npx tsx watch src/index.ts"
+       9   },
+      10   "dependencies": {
+     … +13 lines (ctrl+o to expand)
+
+● Write(tsconfig.json)
+  ⎿  Wrote 14 lines to tsconfig.json
+       1 {
+       2   "compilerOptions": {
+       3     "target": "ES2022",
+       4     "module": "ESNext",
+       5     "moduleResolution": "bundler",
+       6     "strict": true,
+       7     "esModuleInterop": true,
+       8     "skipLibCheck": true,
+       9     "outDir": "./dist",
+      10     "rootDir": "./src"
+     … +4 lines (ctrl+o to expand)
+
+● Write(.env.example)
+  ⎿  Wrote 1 lines to .env.example
+      1 GOOGLE_GENERATIVE_AI_API_KEY=
+
+● Now writing the source files in parallel:
+
+● Write(src\db.ts)
+  ⎿  Wrote 53 lines to src\db.ts
+       1 import Database from 'better-sqlite3';
+       2 import path from 'path';
+       3 import { fileURLToPath } from 'url';
+       4
+       5 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+       6 const dbPath = path.join(__dirname, '..', 'todos.db');
+       7
+       8 const db = new Database(dbPath);
+       9
+      10 db.exec(`
+     … +43 lines (ctrl+o to expand)
+
+● Write(src\weather.ts)
+  ⎿  Wrote 74 lines to src\weather.ts
+       1 export interface WeatherData {
+       2   temperature: number;
+       3   windspeed: number;
+       4   weathercode: number;
+       5   time: string;
+       6 }
+       7
+       8 export interface WeatherResult {
+       9   temperature: number;
+      10   windspeed: number;
+     … +64 lines (ctrl+o to expand)
+
+● Write(src\tools.ts)
+  ⎿  Wrote 64 lines to src\tools.ts
+       1 import { tool } from 'ai';
+       2 import { z } from 'zod';
+       3 import { addTodo, listPendingTodos, completeTodo } from './db.js';
+       4 import { getCurrentWeather } from './weather.js';
+       5
+       6 export const tools = {
+       7   add_todo: tool({
+       8     description: 'Add a new task to the todo list',
+       9     parameters: z.object({
+      10       task: z.string().describe('The task description to add'),
+     … +54 lines (ctrl+o to expand)
+
+● Write(src\index.ts)
+  ⎿  Wrote 119 lines to src\index.ts
+      1 import 'dotenv/config';
+      2 import * as readline from 'readline';
+      3 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+      4 import { generateText } from 'ai';
+      5 import { tools } from './tools.js';
+      6
+      7 const google = createGoogleGenerativeAI({
+      8   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      9 });
+     … +109 lines (ctrl+o to expand)
+
+● Now install dependencies:
+
+● PowerShell(cd "D:\projects\genAI"; npm install 2>&1)
+  ⎿  npm : npm WARN deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
+     At line:1 char:25
+     + cd "D:\projects\genAI"; npm install 2>&1
+     … +16 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Good, installed. Let me verify the exact AI SDK version installed to make sure the API usage is correct:
+
+● PowerShell(cd "D:\projects\genAI"; node -e "const p = require('./node_modules/ai/package.json'); console.log('ai:', p.version)"; node -e "const p = require('./node_modules…)
+  ⎿  ai: 4.3.19
+     @ai-sdk/google: 1.2.22
+
+● PowerShell(cd "D:\projects\genAI"; node -e "import('@ai-sdk/google').then(m => console.log(Object.keys(m)))")
+  ⎿  [ 'createGoogleGenerativeAI', 'google' ]
+
+● PowerShell(cd "D:\projects\genAI"; node -e "import('ai').then(m => console.log('tool' in m, 'generateText' in m, 'streamText' in m))")
+  ⎿  true true true
+
+● All exports check out. Now write the README as requested:
+
+● Write(README.md)
+  ⎿  Wrote 76 lines to README.md
+       2 # 🎩 Jeeves — Your AI Butler
+       3 A Node.js CLI application powered by Google Gemini that acts as a personal AI butler. It manages your todos, checks the weather, and greets you each morning with a
+          helpful briefing.
+       4
+       5 ## Getting Started
+       6
+       7 ### 1. Install dependencies
+       8
+       9 ```bash
+      10 npm install
+     … +70 lines (ctrl+o to expand)
+
+● Let me do a quick type-check to catch any issues before you run it:
+
+● PowerShell(cd "D:\projects\genAI"; npx tsc --noEmit 2>&1)
+  ⎿  (No output)
+
+● Clean — zero type errors. Here's a summary of everything that was built:
+
+  ---
+  Project is ready
+
+  Files created:
+
+  D:\projects\genAI\
+    package.json          — dependencies and scripts
+    tsconfig.json         — TypeScript config (ESNext/bundler)
+    .env.example          — API key template
+    README.md             — stack rationale + usage docs
+    src/
+      index.ts            — entry point: morning briefing + readline chat loop
+      tools.ts            — 4 AI tools (add_todo, list_todos, complete_todo, get_weather)
+      db.ts               — SQLite init + CRUD (better-sqlite3)
+      weather.ts          — Open-Meteo API fetcher with WMO code descriptions
+
+  To run it:
+
+  1. Copy .env.example to .env and paste your key from https://aistudio.google.com
+  2. Run: npx tsx src/index.ts
+
+  On startup, Jeeves will automatically call get_weather and list_todos to deliver a morning briefing. Then the readline loop accepts natural-language commands like:
+
+  - "Add a task to call the dentist"
+  - "What should I wear today?"
+  - "Mark task 2 as done"
+  - "List my todos"
+
+  Type exit or quit to close. The todos are persisted in todos.db (auto-created on first run).
+
+✻ Brewed for 2m 25s
+
+※ recap: Built a Node.js AI butler CLI using TypeScript, Vercel AI SDK, Gemini 2.5 Flash, SQLite, and Open-Meteo. Next step: create your .env file with a Google AI Studio key and
+  run npx tsx src/index.ts. (disable recaps in /config)
+
+❯ I added the env file, moved the project one folder deeper, and added the gemini key to the env. Can you start the project for me
+
+● Let me find where the project moved to first.
+
+● PowerShell(Get-ChildItem "D:\projects\genAI" -Recurse -Filter "package.json" | Select-Object FullName)
+  ⎿  (No output)
+
+● PowerShell(Get-ChildItem "D:\projects" -Recurse -Filter "package.json" -Depth 4 | Select-Object FullName)
+  ⎿  FullName
+     --------
+     D:\projects\ai_only\ai_only\package.json
+     … +175 lines (ctrl+o to expand)
+
+● PowerShell(Get-ChildItem "D:\projects\genAI\genAI" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem "D:\projects\genAI" | Select-Object Name)
+  ⎿  (No output)
+
+● PowerShell(Get-ChildItem "D:\projects\genAI" -Force | Select-Object Name, PSIsContainer)
+  ⎿  (No output)
+
+● PowerShell(Get-ChildItem "D:\projects" | Select-Object Name)
+  ⎿  (No output)
+
+  Listed 3 directories (ctrl+o to expand)
+
+● Found it — the project is at D:\projects\genAI\genAI. Let me check for the .env and then run it:
+
+  Listed 1 directory (ctrl+o to expand)
+
+● Everything's in place. Running it now:
+
+● Skill(run)
+  ⎿  Successfully loaded skill
+
+● Bash(d=/d/projects/genAI/genAI; while :; do
+        grep -Hm1 '^description:' "$d"/.claude/skills/*/SKILL.md 2>/dev/null…)
+  ⎿  (No output)
+
+● No project skill. This is an interactive CLI — I'll use tmux to drive it and capture output.
+
+● Bash(tmux new-session -d -s butler -x 200 -y 50 2>&1 && echo "session started")
+  ⎿  Error: Exit code 127
+     /usr/bin/bash: line 1: tmux: command not found
+
+● Bash(cd /d/projects/genAI/genAI && echo "exit" | npx tsx src/index.ts 2>&1)
+  ⎿  ╔══════════════════════════════════════════════════════════╗
+     ║           🎩  Jeeves — Your AI Butler  🎩               ║
+     ╚══════════════════════════════════════════════════════════╝
+     … +14 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+● Jeeves is alive and working. Here's what happened on startup:
+
+  Morning Briefing output:
+
+  ▎ The weather in Helsinki is rather pleasant this morning, with a temperature of 16.5°C and a gentle breeze. It feels quite mild, so I should think a light jacket or a cardigan
+  ▎ would be perfectly suitable.
+  ▎
+  ▎ As for your tasks, I am pleased to report that there are no pending items on your to-do list. A splendid start to the day, indeed!
+
+  Everything is working — the weather tool fetched live data (16.5°C, mild), the todos tool confirmed an empty list, and Jeeves responded in full butler character.
+
+  To run it interactively yourself:
+
+  cd D:\projects\genAI\genAI
+  npx tsx src/index.ts
+
+✻ Churned for 1m 2s
+
+※ recap: Built a Node.js AI butler CLI using Vercel AI SDK and Gemini. It's fully working — run npx tsx src/index.ts from D:\projects\genAI\genAI to start chatting with Jeeves.
+  (disable recaps in /config)

@@ -1,0 +1,346 @@
+I'm asked to do this assignment for a job interview:
+
+
+
+Round 2 assignment
+
+● Use no more than 4 hours. Use your own discretion when prioritizing objectives.
+
+● Please include your full AI transcript(s). To be clear: we're interested in how you actually
+
+work with these tools, so don't sanitize anything on our account. Half-formed ideas, dead
+
+ends, and the occasional swearing at your AI are all fair game (we do it too).
+
+● Send the result as a git bundle via email to: recruiting.assignments@intentface.com
+
+● Subject line: " - round 2 assignment"
+
+Objectives
+
+● Create an Agent — a helpful butler, powered by an LLM, that you'd actually want talking to you
+
+each morning. Use whatever languages and frameworks you see fit; the user interacts with it
+
+in natural language. The agent should have the following abilities:
+
+● Periodical (once a day, in the morning) updates on stdio, according to the following priority
+
+order:
+
+● A report of today's TODOs, in the style of your choosing
+
+● A suggestion for what to wear when going outside today
+
+● TODO management. The user's TODOs should persist across a restart of the agent.
+
+● Document how to run the agent locally.
+
+● Document any other relevant findings.
+
+
+
+I'm considering basic react + node express for my stack. Probably need some UI libraries and various other stuff
+
+This sounds like a highly practical, fun, and slightly intense interview assignment! Intentface is a GenAI-focused company, so they are definitely looking for how you handle context, tool use (function calling), and agentic behavior rather than just how pretty you can make a frontend.
+
+Since you only have 4 hours, you need to be extremely strategic. Here is a breakdown of how to tackle this, along with a gentle challenge to your proposed tech stack.
+
+1. The Stack: Rethinking React
+You mentioned wanting to use React + Node Express. While a web UI is nice, the instructions specifically mention: "Periodical updates on stdio".
+
+stdio means Standard Input/Output—the terminal.
+
+If you spend 2 hours setting up Vite, React, Express, CORS, and a chat UI library, you will burn half your time on boilerplate.
+
+My Recommendation: Build a pure Node.js (or Python) CLI App.
+
+Why: It natively satisfies the stdio requirement, requires zero frontend boilerplate, and lets you focus 100% on the core AI agent logic (which is what an AI consultancy actually cares about).
+
+Stack: Node.js (with TypeScript if you are fast with it), the official OpenAI SDK (or Anthropic SDK), and a simple local JSON file for database persistence.
+
+2. The Architecture (The "Agent" Pattern)
+To make this work in natural language, your LLM needs to act as an agent with access to tools (Function Calling).
+
+The Loop: User types in terminal -> Message sent to LLM -> LLM decides if it needs to call a tool (e.g., add_todo, get_weather) or respond -> App executes tool -> Result sent back to LLM -> LLM responds to user.
+
+Storage: Just use a local todos.json file. Don't waste time spinning up PostgreSQL or MongoDB. Read/write to a local file using fs.promises.
+
+Weather: For the clothing suggestion, use a free API like Open-Meteo (requires no API keys) based on the user's location (e.g., Helsinki).
+
+3. Your 4-Hour Game Plan
+Here is how you should ruthlessly prioritize your time:
+
+Hour 1: The Core Loop & Persistence
+
+Initialize the Node project.
+
+Set up a terminal prompt using Node's native readline module.
+
+Implement basic chat with your LLM of choice (OpenAI GPT-4o-mini is fast and cheap).
+
+Create the todos.json read/write functions.
+
+Hour 2: Tool Calling (TODOs)
+
+Define the tools for the LLM: add_todo(task), list_todos(), complete_todo(id).
+
+Implement the execution logic so when the LLM says "call add_todo", your code actually updates the JSON file.
+
+Test natural language: "Remind me to buy milk" -> Agent adds to JSON -> Agent says "Got it, added to your list!"
+
+Hour 3: The Morning Update & Weather
+
+Create a script or a command (e.g., typing /morning) that triggers the daily update.
+
+Fetch today's weather using Open-Meteo.
+
+Format a system prompt: "Here is the weather: [X]. Here are the user's TODOs: [Y]. Give a helpful, butler-style morning briefing via stdio."
+
+Hour 4: Polish, Documentation, and Git
+
+Write a crystal-clear README.md. Explain why you chose a CLI over a web app (time constraints, stdio requirement).
+
+Ensure the app restarts gracefully and loads the existing TODOs.
+
+Generate the git bundle (git bundle create yourname-round2.bundle HEAD master).
+
+4. A Note on the AI Transcript
+They explicitly said: "don't sanitize anything... Half-formed ideas, dead ends, and the occasional swearing at your AI are all fair game."
+
+Do not edit your prompts to look smarter. If you use ChatGPT, Claude, or me to write regex, debug a stupid JSON parsing error, or write the tool-calling boilerplate, leave it in. They want to see your prompt engineering skills and how you use AI to accelerate your workflow. Export the chat logs directly.
+
+If you decide to stick with React, that is entirely your call, but ensure you have a boilerplate ready to go so you don't waste time on setup.
+
+What LLM API were you thinking of using for the core agent logic?
+
+This shouldn't take 4 hours, since we are currently planning the project and once we are done planning I will ask you to create a prompt I use for my Claude Code that creates the project. For final touches I will finish off the project with Cursor. My guess is I will be done in 2h. Now lets get back to planning the tech stack first
+
+Smart approach. Leveraging Claude Code for the initial generation and Cursor for refining is exactly how you compress a 4-hour architecture task into a 2-hour implementation sprint.
+
+Since your interaction vector is stdio, keeping the stack lightweight but robust is key. Let’s map out a highly cohesive, modern Node.js backend stack optimized for rapid code generation.
+
+The Proposed Tech Stack
+Instead of standard Express + React, a TypeScript CLI / Daemon architecture will directly satisfy the stdio requirement and prevent boilerplate bloat.
+
+1. Core Runtime: Node.js + TypeScript
+Why: TypeScript gives your LLM agent strict type safety for its tools, and Claude Code excels at generating typed code.
+
+Execution: Run it natively via tsx (TypeScript Execute) so you don't have to fiddle with tsconfig.json build steps during a timed test.
+
+2. Agent Framework: Vercel AI SDK (ai)
+Why: The Vercel AI SDK is the current industry standard for building text, structured outputs, and agentic tool-calling workflows in the JavaScript/TypeScript ecosystem.
+
+Key Feature: The ai core package provides a generateText or streamText function with native tools configuration, handling the entire LLM loop (call tool -> get result -> feed back to LLM) automatically under the hood. It supports Anthropic, OpenAI, or any major provider seamlessly.
+
+3. Persistence: Local SQLite or JSON
+Why: The prompt requires TODOs to persist across restarts.
+
+Option A (Simplest): A simple todos.json handled by fs/promises.
+
+Option B (Slightly cleaner for schema scalability): better-sqlite3 or a micro-ORM like Drizzle targeting a local SQLite file. Claude Code can write this in seconds, and it looks a bit more professional for a Senior/Mid-level interview.
+
+4. External Data: Open-Meteo API
+Why: It provides global weather forecasts entirely via open HTTP GET requests—no API keys, no environment variables, no registration required. It's the ultimate time-saver for assignments.
+
+The Structural Blueprint
+To give you an idea of how the files will layout, here is the lean structure we will aim to prompt Claude Code to create:
+
+Plaintext
+├── package.json
+├── src/
+│   ├── index.ts          # Main stdio loop (readline interface)
+│   ├── agent.ts          # Vercel AI SDK setup, system prompts, and tool loop
+│   ├── tools.ts          # Definitions for add_todo, list_todos, complete_todo
+│   ├── db.ts             # JSON or SQLite persistence abstraction
+│   └── weather.ts        # Open-Meteo API client
+└── todos.json            # Database
+How the Morning Update Works
+Since this runs on stdio, you have two ways the agent can handle the "Morning Update":
+
+Interactive Trigger: When the app starts, it immediately prints the butler-style morning update (Todos + Weather/Clothing) to stdout, then enters a loop waiting for user input (stdin).
+
+Flag Trigger: Running npm start -- --morning just prints the digest and exits.
+
+The interactive trigger is usually what interviewers mean by an "interactive butler that greets you each morning."
+
+How do you feel about dropping React in favor of this pure TypeScript/Node CLI stack? If this looks solid, we can define the specific tools and prompt strategies next.
+
+SQL lite is fine
+
+Excellent choice. SQLite gives you robust persistence without the flakiness of raw JSON file locks, and it signals to the interviewers that you know how to structure a real backend. Using better-sqlite3 combined with zod (for validating the LLM's tool inputs) is a bulletproof combination.
+
+Since our stack is now locked (Node.js + TS + Vercel AI SDK + SQLite + Open-Meteo), we are ready to generate the master prompt for Claude Code.
+
+Here is a highly detailed prompt designed to make Claude Code build your entire project scaffolding, database, and tool logic in one go. You can copy and paste this directly into Claude Code.
+
+The Claude Code Master Prompt
+Project Objective:
+Please build a Node.js CLI application using TypeScript. This is an AI Agent acting as a "helpful butler" that interacts with the user via stdio.
+
+Tech Stack & Libraries:
+
+Runtime: Node.js (run via tsx for TypeScript execution without compilation)
+
+AI Framework: ai (Vercel AI SDK) and @ai-sdk/openai (or @ai-sdk/anthropic depending on my API key)
+
+Database: better-sqlite3
+
+Validation: zod (for defining LLM tool schemas)
+
+Core Requirements:
+
+Project Setup: Initialize the package.json, install all necessary dependencies (and @types), and set up a basic tsconfig.json.
+
+Database (src/db.ts): Initialize a local todos.db using better-sqlite3. Create a todos table with id (INTEGER PRIMARY KEY), task (TEXT), completed (BOOLEAN default 0), and created_at (TIMESTAMP). Include basic CRUD helper functions.
+
+Weather API (src/weather.ts): Create a function to fetch the current weather using the free Open-Meteo API (e.g., https://api.open-meteo.com/v1/forecast?latitude=60.1695&longitude=24.9354&current_weather=true). Do not use any API keys for this.
+
+Agent Tools (src/tools.ts): Use the Vercel AI SDK tool pattern with Zod to define the following tools:
+
+add_todo: Takes a task string, saves to SQLite.
+
+list_todos: Retrieves pending TODOs from SQLite.
+
+complete_todo: Takes an id, marks it completed in SQLite.
+
+get_weather: Fetches current weather using the Open-Meteo function.
+
+Main Loop (src/index.ts): >     * Set up a readline interface for standard input/output.
+
+Create an infinite chat loop using Vercel AI SDK's generateText or streamText.
+
+Pass the defined tools into the AI SDK configuration.
+
+The Morning Briefing: When the app starts, immediately generate and print a "Morning Update" to stdout. The system prompt for this initial message should instruct the agent to: check the weather, suggest what to wear based on that weather, and list today's pending TODOs in the persona of a helpful, polite butler. After this initial briefing, drop into the standard user input loop.
+
+Please write all necessary files and let me know when I can run npx tsx src/index.ts.
+
+Next Steps
+Once Claude Code spits out the project, you will just need to drop in your OpenAI/Anthropic API key into a .env file, run it, and then use Cursor to tweak the butler's personality or fix any minor TypeScript quirks.
+
+Does this prompt cover everything you want Claude to generate in the first pass, or should we add specific instructions for how the butler's personality should be configured in the AI's system prompt?
+
+Let's go over the AI framework, is there a free tier in any of these. I'm not giving a paid key to the company interviewing me.
+
+I completely understand. Never use your personal credit card for an interview assignment!
+
+Here is the good news: Google Gemini via Google AI Studio is absolutely free and requires no credit card.
+Price Per Token
+
+The Vercel AI SDK natively supports the Google Gemini provider (@ai-sdk/google).
+
+Here is the breakdown of the free tiers for the major providers as of 2026, so you can see why Gemini is the clear winner for this assignment:
+
+1. Google Gemini (via Google AI Studio)
+Cost: 100% Free. No credit card required.
+No Code MBA
++ 1
+
+Models Included: Gemini 2.5 Flash, Flash-Lite, and Gemini 2.5 Pro.
+Price Per Token
+
+Limits: Rate limits are enforced (e.g., Gemini 2.5 Flash allows 10 requests/minute and 250 requests/day), which is more than enough for a local CLI agent test.
+Price Per Token
+
+How to use: Just go to aistudio.google.com, sign in with a Google account, and generate an API key.
+
+2. Anthropic (Claude)
+Cost: They offer $5 in free API credits for new accounts, but they expire after 30 days.
+
+Limits: After the $5 is gone, there is no recurring free tier. You must add a credit card.
+
+3. OpenAI (ChatGPT)
+Cost: Similar to Anthropic, new accounts get $5 in free credits that expire after a few months.
+
+Limits: There is no permanent free tier. If you have already used your initial $5 credit on your account, you will be blocked unless you add $5 minimum to a prepaid billing balance.
+
+Adapting the Prompt for Gemini
+Since Gemini is the smartest choice for a zero-cost setup, we just need to make a tiny tweak to the prompt for Claude Code.
+
+Replace the "Tech Stack & Libraries" section in the master prompt with this:
+
+Tech Stack & Libraries:
+
+Runtime: Node.js (run via tsx for TypeScript execution without compilation)
+
+AI Framework: ai (Vercel AI SDK) and @ai-sdk/google (Google Gemini provider)
+
+Database: better-sqlite3
+
+Validation: zod (for defining LLM tool schemas)
+
+Crucial Detail: Configure the Vercel AI SDK to use the gemini-2.5-flash model.
+
+With this setup, you can generate a free key from Google AI Studio, drop it into your .env file as GOOGLE_GENERATIVE_AI_API_KEY, and you will have a fully functioning, fast, and free LLM backend.
+
+Are you ready to jump into Claude Code with this, or do you want to quickly review how the Vercel AI SDK handles tool calling first to make sure you are comfortable explaining it in the interview?
+
+I will go with the aistudio.google.com then
+
+This is the perfect, pragmatic choice for an interview assignment.
+
+Here is the final, adjusted master prompt. Feed this directly into Claude Code. It has been refined to explicitly ask for the @ai-sdk/google integration so everything works smoothly with your free Gemini key.
+
+The Claude Code Master Prompt
+Project Objective:
+Please build a Node.js CLI application using TypeScript. This is an AI Agent acting as a "helpful butler" that interacts with the user via stdio.
+
+Tech Stack & Libraries:
+
+Runtime: Node.js (run via tsx for TypeScript execution without compilation)
+
+AI Framework: ai (Vercel AI SDK) and @ai-sdk/google
+
+Database: better-sqlite3
+
+Validation: zod (for defining LLM tool schemas)
+
+Dotenv: dotenv (to load the .env file)
+
+Core Requirements:
+
+Project Setup: Initialize the package.json, install all necessary dependencies (and @types), and set up a basic tsconfig.json. Ensure the Vercel AI SDK is configured to use the google('gemini-2.5-flash') model.
+
+Database (src/db.ts): Initialize a local todos.db using better-sqlite3. Create a todos table with id (INTEGER PRIMARY KEY), task (TEXT), completed (BOOLEAN default 0), and created_at (TIMESTAMP). Include basic CRUD helper functions.
+
+Weather API (src/weather.ts): Create a function to fetch the current weather using the free Open-Meteo API (e.g., [https://api.open-meteo.com/v1/forecast?latitude=60.1695&longitude=24.9354&current_weather=true](https://api.open-meteo.com/v1/forecast?latitude=60.1695&longitude=24.9354&current_weather=true)). Do not use any API keys for this.
+
+Agent Tools (src/tools.ts): Use the Vercel AI SDK tool pattern with Zod to define the following tools:
+
+add_todo: Takes a task string, saves to SQLite.
+
+list_todos: Retrieves pending TODOs from SQLite.
+
+complete_todo: Takes an id, marks it completed in SQLite.
+
+get_weather: Fetches current weather using the Open-Meteo function.
+
+Main Loop (src/index.ts):
+
+Set up a readline interface for standard input/output.
+
+Create an infinite chat loop using Vercel AI SDK's generateText or streamText. Note: Since we are in a CLI, generateText with maxSteps: 5 is likely the easiest way to handle multi-step tool calls seamlessly.
+
+Pass the defined tools into the AI SDK configuration.
+
+The Morning Briefing: When the app starts, immediately generate and print a "Morning Update" to stdout. The system prompt for this initial message should instruct the agent to: check the weather, suggest what to wear based on that weather, and list today's pending TODOs in the persona of a helpful, polite butler. After this initial briefing, drop into the standard user input loop.
+
+Please write all necessary files, create a .env.example showing GOOGLE_GENERATIVE_AI_API_KEY=, and let me know when I can run npx tsx src/index.ts.
+
+Your Execution Checklist
+Run the prompt in Claude Code.
+
+Grab your free key from aistudio.google.com.
+
+Create your .env file and paste the key.
+
+Run npm install (or pnpm install / yarn).
+
+Run npx tsx src/index.ts.
+
+Test adding a task and then asking for the weather.
+
+Crucial: Once it works, write your README.md explaining how to run it and why you chose this stack (to fulfill the documentation requirement).
+
+Want to draft the README?
