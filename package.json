@@ -1,0 +1,23 @@
+{
+  "name": "ai-butler",
+  "version": "1.0.0",
+  "description": "An AI-powered helpful butler CLI agent",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/index.ts",
+    "dev": "npx tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^1.0.0",
+    "ai": "^4.0.0",
+    "better-sqlite3": "^9.4.3",
+    "dotenv": "^16.4.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
